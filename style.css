@@ -175,4 +175,125 @@ body {
     height: 40px;
     border-radius: 50%;
     font-size: 1rem !important;
+
 }
+
+
+/* =========================================
+   📱 MOBILE RESPONSIVE DESIGN (Media Queries)
+   ========================================= */
+
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column; /* साइडबार को ऊपर लाने के लिए */
+    }
+
+    /* Sidebar को Top Navigation बार बनाना */
+    .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        box-sizing: border-box;
+        gap: 10px;
+        border-bottom: 1px solid #282828;
+    }
+
+    .sidebar nav {
+        display: none; /* जगह बचाने के लिए 'Home' टेक्स्ट छुपाएं */
+    }
+
+    .sidebar .logo {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+
+    .upload-section {
+        margin: 0;
+    }
+
+    .btn-secondary {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+
+    /* Search Box फुल चौड़ाई का करना */
+    .search-box {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Main Content Padding एडजस्ट करना */
+    .content {
+        padding: 15px;
+        padding-bottom: 110px; /* प्लेयर के लिए नीचे जगह छोड़ना */
+    }
+
+    /* Song Grid के कार्ड्स मोबाइल के हिसाब से छोटे करना */
+    .song-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 15px;
+    }
+
+    .song-card img {
+        margin-bottom: 5px;
+    }
+
+    .song-card h4 {
+        font-size: 0.9rem;
+        margin: 5px 0;
+    }
+
+    /* Mobile Player (Footer) */
+    .player-inner {
+        padding: 10px 15px;
+        gap: 10px;
+    }
+
+    .current-track {
+        width: auto;
+        flex: 1; /* प्लेयर में बची हुई जगह लेना */
+        overflow: hidden; 
+    }
+
+    .current-track img {
+        width: 45px;
+        height: 45px;
+    }
+
+    .track-details div {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; /* नाम बड़ा होने पर ... दिखाना */
+        font-size: 0.85rem;
+    }
+
+    .track-details small {
+        display: none; /* मोबाइल में आर्टिस्ट का नाम छुपाना */
+    }
+
+    .controls {
+        gap: 15px;
+    }
+
+    .play-main {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem !important;
+    }
+
+    /* मोबाइल में वॉल्यूम स्लाइडर की ज़रूरत नहीं होती (हार्डवेयर बटन होते हैं) */
+    .extra-controls {
+        display: none; 
+    }
+}
+
+/* बहुत छोटी स्क्रीन्स के लिए (iPhone SE आदि) */
+@media (max-width: 480px) {
+    .song-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    }
+}
+
