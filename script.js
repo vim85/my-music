@@ -108,6 +108,24 @@ function playTrack(index) {
     }
 
     document.getElementById('playBtn').innerHTML = '<i class="fas fa-pause"></i>';
+
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: track.title,
+            artist: track.artist || 'Unknown Artist',
+            artwork: [
+                { src: track.img, sizes: '96x96', type: 'image/png' },
+                { src: track.img, sizes: '256x256', type: 'image/png' },
+                { src: track.img, sizes: '512x512', type: 'image/png' }
+            ]
+        });
+
+        // लॉक स्क्रीन के बटन्स को हमारे प्लेयर के बटन्स से जोड़ना
+        navigator.mediaSession.setActionHandler('play', () => document.getElementById('playBtn').click());
+        navigator.mediaSession.setActionHandler('pause', () => document.getElementById('playBtn').click());
+        navigator.mediaSession.setActionHandler('previoustrack', () => document.getElementById('prevBtn').click());
+        navigator.mediaSession.setActionHandler('nexttrack', () => document.getElementById('nextBtn').click());
+    }
 }
 
 // 5. Controls (Play/Pause)
@@ -184,4 +202,5 @@ setInterval(() => {
 // 8. Search Input Event
 document.getElementById('searchInput').onkeypress = (e) => {
     if (e.key === 'Enter') searchSongs(e.target.value);
+
 };
