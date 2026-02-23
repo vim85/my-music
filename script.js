@@ -1,11 +1,16 @@
-// --- CONFIGURATION ---
-const YOUTUBE_API_KEY = "AIzaSyC_PErZfusxPFXFnUNXMa1ZSujkJbrgeaA";
 
+const YOUTUBE_API_KEYS = [
+    "AIzaSyC_PErZfusxPFXFnUNXMa1ZSujkJbrgeaA", 
+    "AIzaSyBnV1KemObqiGSWoO9eRKC38erCVwpOBCo",    
+    "AIzaSyAIwPWh9Zu1C5kPh1Lw4b9HWDVkr4RZcow"                
+];
+
+let currentKeyIndex = 0;
 let player;
 let isPlayerReady = false;
 let currentPlaylist = [];
 let currentIndex = -1;
-let localAudio = new Audio(); // <-- लोकल गानों के लिए ऑडियो प्लेयर
+let localAudio = new Audio(); // लोकल गानों के लिए प्लेयर
 
 // 1. YouTube API Initialization
 function onYouTubeIframeAPIReady() {
@@ -19,18 +24,43 @@ function onYouTubeIframeAPIReady() {
     });
 }
 
-// 2. Search Logic using YouTube Official API
+// 2. Search & Caching Logic (Pro Feature)
 async function searchSongs(query) {
     const songList = document.getElementById('songList');
     songList.innerHTML = '<div class="status-msg">Searching...</div>';
 
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&q=${encodeURIComponent(query)}&type=video&videoCategoryId=10&key=${YOUTUBE_API_KEY}`;
+    // A. चेक करें कि क्या यह सर्च पहले ही Cache में सेव है?
+    const cacheKey = `music_cache_${query.toLowerCase()}`;
+    const cachedData = localStorage.getItem(cacheKey);
+
+    if (cachedData) {
+        console.log("Loaded from Cache! (Quota Saved 🚀)");
+        currentPlaylist = JSON.parse(cachedData);
+        document.getElementById('listTitle').innerText = `Results for: ${query}`;
+        renderUI();
+        return; // Cache मिल गया, तो API कॉल मत करो
+    }
+
+    // B. अगर Cache में नहीं है, तो API से मंगाओ
+    const apiKey = YOUTUBE_API_KEYS[currentKeyIndex];
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&q=${encodeURIComponent(query)}&type=video&videoCategoryId=10&key=${apiKey}`;
 
     try {
         const res = await fetch(url);
         const data = await res.json();
 
-        if (data.error) throw new Error(data.error.message);
+        // अगर Quota खत्म हो गया
+        if (data.error && data.error.errors && data.error.errors[0].reason === 'quotaExceeded') {
+            console.warn(`Key ${currentKeyIndex + 1} Limit Exceeded!`);
+            if (currentKeyIndex < YOUTUBE_API_KEYS.length - 1) {
+                currentKeyIndex++; 
+                return searchSongs(query); // अगली Key से ट्राई करो
+            } else {
+                throw new Error("API Limit Over! Please play Local Music or come back tomorrow.");
+            }
+        } else if (data.error) {
+            throw new Error(data.error.message);
+        }
 
         const youtubeTracks = data.items.map(item => ({
             title: item.snippet.title,
@@ -41,7 +71,13 @@ async function searchSongs(query) {
         }));
 
         currentPlaylist = youtubeTracks;
+        
+        // C. रिज़ल्ट को Cache में सेव कर लो ताकि अगली बार API कॉल न हो
+        localStorage.setItem(cacheKey, JSON.stringify(youtubeTracks));
+        
+        document.getElementById('listTitle').innerText = `Results for: ${query}`;
         renderUI();
+
     } catch (err) {
         console.error("Search Error:", err);
         songList.innerHTML = `<div class="status-msg" style="color:red;">Error: ${err.message}</div>`;
@@ -63,10 +99,9 @@ localInput.addEventListener('change', (e) => {
         localUrl: URL.createObjectURL(file)
     }));
 
-    // गानों को लिस्ट में सबसे ऊपर जोड़ें
     currentPlaylist = [...localTracks, ...currentPlaylist];
-    renderUI();
     document.getElementById('listTitle').innerText = "My Library";
+    renderUI();
     alert(files.length + " गाने लाइब्रेरी में जोड़े गए!");
 });
 
@@ -82,24 +117,20 @@ function renderUI() {
     });
 }
 
-// 4. Play Logic (Dual Player Support)
+// 4. Play Logic (Dual Player & Lock Screen Support)
 function playTrack(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
     currentIndex = index;
     const track = currentPlaylist[index];
 
-    // Update Player UI
+    // UI Update
     document.getElementById('currTrackImg').src = track.img;
     document.getElementById('currTrackName').innerText = track.title;
     document.getElementById('currArtistName').innerText = track.artist;
 
-    // पुराना गाना रोकें (YouTube और Local दोनों)
-    if (isPlayerReady && player && typeof player.stopVideo === 'function') {
-        player.stopVideo();
-    }
+    if (isPlayerReady && player && typeof player.stopVideo === 'function') player.stopVideo();
     localAudio.pause();
 
-    // चेक करें गाना लोकल है या YouTube का
     if (track.isLocal) {
         localAudio.src = track.localUrl;
         localAudio.play();
@@ -109,6 +140,7 @@ function playTrack(index) {
 
     document.getElementById('playBtn').innerHTML = '<i class="fas fa-pause"></i>';
 
+    // 📱 MediaSession API (Lock Screen Controls)
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
             title: track.title,
@@ -120,7 +152,6 @@ function playTrack(index) {
             ]
         });
 
-        // लॉक स्क्रीन के बटन्स को हमारे प्लेयर के बटन्स से जोड़ना
         navigator.mediaSession.setActionHandler('play', () => document.getElementById('playBtn').click());
         navigator.mediaSession.setActionHandler('pause', () => document.getElementById('playBtn').click());
         navigator.mediaSession.setActionHandler('previoustrack', () => document.getElementById('prevBtn').click());
@@ -130,7 +161,6 @@ function playTrack(index) {
 
 // 5. Controls (Play/Pause)
 document.getElementById('playBtn').onclick = () => {
-    // अगर कोई गाना सिलेक्ट नहीं है, तो पहला गाना चलाएं
     if (currentIndex === -1 && currentPlaylist.length > 0) {
         playTrack(0);
         return;
@@ -140,7 +170,6 @@ document.getElementById('playBtn').onclick = () => {
     if (!track) return;
 
     if (track.isLocal) {
-        // लोकल गाने के लिए Play/Pause
         if (localAudio.paused) {
             localAudio.play();
             document.getElementById('playBtn').innerHTML = '<i class="fas fa-pause"></i>';
@@ -149,9 +178,8 @@ document.getElementById('playBtn').onclick = () => {
             document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
         }
     } else {
-        // YouTube गाने के लिए Play/Pause
         if (player && typeof player.getPlayerState === 'function') {
-            if (player.getPlayerState() === 1) { // 1 means playing
+            if (player.getPlayerState() === 1) { 
                 player.pauseVideo();
                 document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
             } else {
@@ -170,11 +198,7 @@ document.getElementById('prevBtn').onclick = () => { if (currentIndex > 0) playT
 const volumeSlider = document.getElementById('volumeSlider');
 volumeSlider.addEventListener('input', (e) => {
     const vol = e.target.value;
-    // YouTube वॉल्यूम (0-100)
-    if (isPlayerReady && player && typeof player.setVolume === 'function') {
-        player.setVolume(vol);
-    }
-    // लोकल ऑडियो वॉल्यूम (0.0 - 1.0)
+    if (isPlayerReady && player && typeof player.setVolume === 'function') player.setVolume(vol);
     localAudio.volume = vol / 100;
 });
 
@@ -190,17 +214,14 @@ setInterval(() => {
     } else if (track && track.isLocal) {
         if (!localAudio.paused) {
             perc = (localAudio.currentTime / localAudio.duration) * 100;
-            if (localAudio.ended) nextSong(); // गाना खत्म होने पर अगला चले
+            if (localAudio.ended) nextSong(); 
         }
     }
 
-    if (perc > 0) {
-        document.getElementById('progressBar').style.width = perc + '%';
-    }
+    if (perc > 0) document.getElementById('progressBar').style.width = perc + '%';
 }, 1000);
 
 // 8. Search Input Event
 document.getElementById('searchInput').onkeypress = (e) => {
     if (e.key === 'Enter') searchSongs(e.target.value);
-
 };
