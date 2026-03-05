@@ -13,11 +13,12 @@
         <aside class="sidebar">
             <h2 class="logo"><i class="fas fa-compact-disc"></i> MyMusic</h2>
             <nav>
-                <div class="nav-item active" onclick="searchSongs('Top Hits')"><i class="fas fa-home"></i> Home</div>
+                <div class="nav-item active" id="navHome" onclick="fetchTrendingSongs()"><i class="fas fa-home"></i> Home</div>
+                <div class="nav-item" id="navFav" onclick="showFavorites()"><i class="fas fa-heart"></i> Favorites</div>
             </nav>
             <div class="upload-section">
-                <label for="localFile" class="btn-upload">
-                    <i class="fas fa-plus"></i> Local Files
+                <label for="localFile" class="btn-secondary" style="color: white; font-size: 14px; margin-top:20px; cursor: pointer;">
+                    <i class="fas fa-folder-open"></i> Local Music
                     <input type="file" id="localFile" accept="audio/*" multiple hidden>
                 </label>
             </div>
@@ -27,17 +28,23 @@
             <header class="top-bar">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search songs or artists...">
+                    <input type="text" id="searchInput" placeholder="Search songs or artists..." onkeypress="handleSearch(event)">
                 </div>
             </header>
+            
             <h2 id="listTitle">Trending Now</h2>
             <div id="songList" class="song-grid">
-                <p class="status-msg">Loading Player...</p>
+                <p class="status-msg">Loading Songs...</p>
             </div>
         </main>
 
         <footer class="player">
-            <div class="progress-area" id="progressContainer"><div class="progress-bar" id="progressBar"></div></div>
+            <audio id="audioPlayer" style="display: none;"></audio>
+
+            <div class="progress-area" id="progressContainer" onclick="seekSong(event)">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
             <div class="player-inner">
                 <div class="current-track">
                     <img id="currTrackImg" src="https://placehold.co/60" alt="">
@@ -45,22 +52,25 @@
                         <div id="currTrackName">No Song</div>
                         <small id="currArtistName">Search to play</small>
                     </div>
+                    <button id="favBtn" onclick="toggleFavorite()" style="background: none; border: none; color: #b3b3b3; cursor: pointer; margin-left: 10px; font-size: 1.2rem;">
+                        <i class="far fa-heart" id="favIcon"></i>
+                    </button>
                 </div>
+                
                 <div class="controls">
-                    <button id="prevBtn"><i class="fas fa-step-backward"></i></button>
-                    <button id="playBtn" class="play-main"><i class="fas fa-play"></i></button>
-                    <button id="nextBtn"><i class="fas fa-step-forward"></i></button>
+                    <button id="prevBtn" onclick="playPrev()"><i class="fas fa-step-backward"></i></button>
+                    <button id="playBtn" class="play-main" onclick="togglePlayPause()"><i class="fas fa-play" id="playIcon"></i></button>
+                    <button id="nextBtn" onclick="playNext()"><i class="fas fa-step-forward"></i></button>
                 </div>
-                <div class="extra-controls">
+                
+                <div class="extra-controls" style="display:flex; align-items:center; gap:10px; color:#b3b3b3;">
                     <i class="fas fa-volume-up"></i>
-                    <input type="range" id="volumeSlider" min="0" max="100" value="80">
+                    <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="100" onchange="changeVolume()">
                 </div>
             </div>
         </footer>
     </div>
 
-    <div id="yt-player-container" style="display:none;"><div id="youtubePlayer"></div></div>
-    <script src="https://www.youtube.com/iframe_api"></script>
     <script src="script.js"></script>
 </body>
 </html>
