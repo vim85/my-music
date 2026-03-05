@@ -1,227 +1,258 @@
 
-const YOUTUBE_API_KEYS = [
-    "AIzaSyC_PErZfusxPFXFnUNXMa1ZSujkJbrgeaA", 
-    "AIzaSyBnV1KemObqiGSWoO9eRKC38erCVwpOBCo",    
-    "AIzaSyAIwPWh9Zu1C5kPh1Lw4b9HWDVkr4RZcow"                
-];
+const API_BASE_URL = "https://my-musicprepository.vercel.app/api/search/songs?query="; 
 
-let currentKeyIndex = 0;
-let player;
-let isPlayerReady = false;
+
+const songList = document.getElementById('songList');
+const searchInput = document.getElementById('searchInput');
+const listTitle = document.getElementById('listTitle');
+
+const audioPlayer = document.getElementById('audioPlayer');
+const playIcon = document.getElementById('playIcon');
+const currTrackName = document.getElementById('currTrackName');
+const currArtistName = document.getElementById('currArtistName');
+const currTrackImg = document.getElementById('currTrackImg');
+const progressBar = document.getElementById('progressBar');
+const volumeSlider = document.getElementById('volumeSlider');
+const favIcon = document.getElementById('favIcon');
+const localFileInput = document.getElementById('localFile');
+
 let currentPlaylist = [];
-let currentIndex = -1;
-let localAudio = new Audio(); // लोकल गानों के लिए प्लेयर
+let currentIndex = 0;
+let currentTrack = null;
 
-// 1. YouTube API Initialization
-function onYouTubeIframeAPIReady() {
-    player = new YT.Player('youtubePlayer', {
-        height: '0', width: '0',
-        playerVars: { 'origin': window.location.origin, 'enablejsapi': 1 },
-        events: {
-            'onReady': () => { isPlayerReady = true; searchSongs('New Bollywood Hits'); },
-            'onStateChange': (e) => { if (e.data === YT.PlayerState.ENDED) nextSong(); }
-        }
-    });
+
+let favoriteSongs = JSON.parse(localStorage.getItem('myFavorites')) || [];
+
+window.onload = () => {
+    fetchTrendingSongs();
+    audioPlayer.volume = volumeSlider.value;
+};
+
+function handleSearch(event) {
+    if (event.key === 'Enter') {
+        const query = searchInput.value.trim();
+        if (query) searchSongs(query);
+    }
 }
 
-// 2. Search & Caching Logic (Pro Feature)
 async function searchSongs(query) {
-    const songList = document.getElementById('songList');
-    songList.innerHTML = '<div class="status-msg">Searching...</div>';
-
-    // A. चेक करें कि क्या यह सर्च पहले ही Cache में सेव है?
-    const cacheKey = `music_cache_${query.toLowerCase()}`;
-    const cachedData = localStorage.getItem(cacheKey);
-
-    if (cachedData) {
-        console.log("Loaded from Cache! (Quota Saved 🚀)");
-        currentPlaylist = JSON.parse(cachedData);
-        document.getElementById('listTitle').innerText = `Results for: ${query}`;
-        renderUI();
-        return; // Cache मिल गया, तो API कॉल मत करो
-    }
-
-    // B. अगर Cache में नहीं है, तो API से मंगाओ
-    const apiKey = YOUTUBE_API_KEYS[currentKeyIndex];
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&q=${encodeURIComponent(query)}&type=video&videoCategoryId=10&key=${apiKey}`;
+    listTitle.innerText = `Search Results for "${query}"`;
+    songList.innerHTML = '<p class="status-msg">Searching...</p>';
 
     try {
-        const res = await fetch(url);
-        const data = await res.json();
+        const response = await fetch(API_BASE_URL + encodeURIComponent(query));
+        const data = await response.json();
 
-        // अगर Quota खत्म हो गया
-        if (data.error && data.error.errors && data.error.errors[0].reason === 'quotaExceeded') {
-            console.warn(`Key ${currentKeyIndex + 1} Limit Exceeded!`);
-            if (currentKeyIndex < YOUTUBE_API_KEYS.length - 1) {
-                currentKeyIndex++; 
-                return searchSongs(query); // अगली Key से ट्राई करो
-            } else {
-                throw new Error("API Limit Over! Please play Local Music or come back tomorrow.");
-            }
-        } else if (data.error) {
-            throw new Error(data.error.message);
+        if (data.success && data.data && data.data.results.length > 0) {
+            
+            currentPlaylist = data.data.results.map(song => {
+                let downloadLink = "";
+                if (song.downloadUrl && song.downloadUrl.length > 0) {
+                    downloadLink = song.downloadUrl[song.downloadUrl.length - 1].url; 
+                }
+                return {
+                    id: song.id,
+                    name: song.name,
+                    artist: (song.artists && song.artists.primary && song.artists.primary.length > 0) ? song.artists.primary[0].name : "Unknown",
+                    image: song.image[song.image.length - 1].url,
+                    url: downloadLink
+                };
+            });
+            displaySongs();
+        } else {
+            songList.innerHTML = '<p class="status-msg">No songs found.</p>';
         }
-
-        const youtubeTracks = data.items.map(item => ({
-            title: item.snippet.title,
-            artist: item.snippet.channelTitle,
-            img: item.snippet.thumbnails.high.url,
-            videoId: item.id.videoId,
-            isLocal: false
-        }));
-
-        currentPlaylist = youtubeTracks;
-        
-        // C. रिज़ल्ट को Cache में सेव कर लो ताकि अगली बार API कॉल न हो
-        localStorage.setItem(cacheKey, JSON.stringify(youtubeTracks));
-        
-        document.getElementById('listTitle').innerText = `Results for: ${query}`;
-        renderUI();
-
-    } catch (err) {
-        console.error("Search Error:", err);
-        songList.innerHTML = `<div class="status-msg" style="color:red;">Error: ${err.message}</div>`;
+    } catch (error) {
+        console.error("API Error:", error);
+        songList.innerHTML = '<p class="status-msg" style="color:red;">Failed to fetch songs.</p>';
     }
 }
 
-// 3. Local Music Logic
-const localInput = document.getElementById('localFile');
-localInput.addEventListener('change', (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+function fetchTrendingSongs() {
+    document.getElementById('navHome').classList.add('active');
+    document.getElementById('navFav').classList.remove('active');
+    searchInput.value = '';
+    searchSongs("Top Hindi Songs"); 
+    listTitle.innerText = "Trending Now";
+}
 
-    const localTracks = files.map(file => ({
-        title: file.name.replace(/\.[^/.]+$/, ""),
-        artist: "Local File",
-        img: "https://placehold.co/150/1db954/white?text=Local+Music",
-        videoId: null,
-        isLocal: true,
-        localUrl: URL.createObjectURL(file)
-    }));
+function displaySongs() {
+    songList.innerHTML = ""; 
 
-    currentPlaylist = [...localTracks, ...currentPlaylist];
-    document.getElementById('listTitle').innerText = "My Library";
-    renderUI();
-    alert(files.length + " गाने लाइब्रेरी में जोड़े गए!");
-});
-
-function renderUI() {
-    const songList = document.getElementById('songList');
-    songList.innerHTML = '';
-    currentPlaylist.forEach((track, index) => {
+    currentPlaylist.forEach((song, index) => {
         const card = document.createElement('div');
-        card.className = 'song-card';
-        card.innerHTML = `<img src="${track.img}"><h4>${track.title.slice(0, 35)}...</h4><small>${track.artist}</small>`;
-        card.onclick = () => playTrack(index);
+        card.classList.add('song-card');
+        card.innerHTML = `
+            <img src="${song.image}" alt="${song.name}">
+            <h4 style="margin: 10px 0 5px 0; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${song.name}</h4>
+            <p style="margin: 0; color: #b3b3b3; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${song.artist}</p>
+        `;
+
+        card.onclick = () => loadAndPlaySong(index);
         songList.appendChild(card);
     });
 }
 
-// 4. Play Logic (Dual Player & Lock Screen Support)
-function playTrack(index) {
+
+function loadAndPlaySong(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
-    currentIndex = index;
-    const track = currentPlaylist[index];
 
-    // UI Update
-    document.getElementById('currTrackImg').src = track.img;
-    document.getElementById('currTrackName').innerText = track.title;
-    document.getElementById('currArtistName').innerText = track.artist;
+    currentIndex = index; 
+    currentTrack = currentPlaylist[currentIndex];
 
-    if (isPlayerReady && player && typeof player.stopVideo === 'function') player.stopVideo();
-    localAudio.pause();
-
-    if (track.isLocal) {
-        localAudio.src = track.localUrl;
-        localAudio.play();
-    } else {
-        if (isPlayerReady) player.loadVideoById(track.videoId);
-    }
-
-    document.getElementById('playBtn').innerHTML = '<i class="fas fa-pause"></i>';
-
-    // 📱 MediaSession API (Lock Screen Controls)
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: track.title,
-            artist: track.artist || 'Unknown Artist',
-            artwork: [
-                { src: track.img, sizes: '96x96', type: 'image/png' },
-                { src: track.img, sizes: '256x256', type: 'image/png' },
-                { src: track.img, sizes: '512x512', type: 'image/png' }
-            ]
-        });
-
-        navigator.mediaSession.setActionHandler('play', () => document.getElementById('playBtn').click());
-        navigator.mediaSession.setActionHandler('pause', () => document.getElementById('playBtn').click());
-        navigator.mediaSession.setActionHandler('previoustrack', () => document.getElementById('prevBtn').click());
-        navigator.mediaSession.setActionHandler('nexttrack', () => document.getElementById('nextBtn').click());
-    }
-}
-
-// 5. Controls (Play/Pause)
-document.getElementById('playBtn').onclick = () => {
-    if (currentIndex === -1 && currentPlaylist.length > 0) {
-        playTrack(0);
+    if (!currentTrack.url) {
+        alert("Audio URL not available.");
         return;
     }
 
-    const track = currentPlaylist[currentIndex];
-    if (!track) return;
+    currTrackName.innerText = currentTrack.name;
+    currArtistName.innerText = currentTrack.artist;
+    currTrackImg.src = currentTrack.image;
 
-    if (track.isLocal) {
-        if (localAudio.paused) {
-            localAudio.play();
-            document.getElementById('playBtn').innerHTML = '<i class="fas fa-pause"></i>';
-        } else {
-            localAudio.pause();
-            document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
-        }
-    } else {
-        if (player && typeof player.getPlayerState === 'function') {
-            if (player.getPlayerState() === 1) { 
-                player.pauseVideo();
-                document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
-            } else {
-                player.playVideo();
-                document.getElementById('playBtn').innerHTML = '<i class="fas fa-pause"></i>';
-            }
-        }
+    audioPlayer.src = currentTrack.url;
+    audioPlayer.play();
+    
+    playIcon.classList.remove('fa-play');
+    playIcon.classList.add('fa-pause');
+
+    checkIfFavorite(); 
+
+    
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: currentTrack.name,
+            artist: currentTrack.artist,
+            album: 'Pro Music Player',
+            artwork: [ { src: currentTrack.image, sizes: '512x512', type: 'image/jpeg' } ]
+        });
+
+        navigator.mediaSession.setActionHandler('play', () => audioPlayer.play());
+        navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause());
+        navigator.mediaSession.setActionHandler('previoustrack', () => playPrev());
+        navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
     }
-};
+}
 
-function nextSong() { if (currentIndex < currentPlaylist.length - 1) playTrack(currentIndex + 1); }
-document.getElementById('nextBtn').onclick = nextSong;
-document.getElementById('prevBtn').onclick = () => { if (currentIndex > 0) playTrack(currentIndex - 1); };
+function playNext() {
+    if (currentPlaylist.length === 0) return;
+    let nextIndex = currentIndex + 1;
+    if (nextIndex >= currentPlaylist.length) nextIndex = 0;
+    loadAndPlaySong(nextIndex);
+}
 
-// 6. Volume Fix
-const volumeSlider = document.getElementById('volumeSlider');
-volumeSlider.addEventListener('input', (e) => {
-    const vol = e.target.value;
-    if (isPlayerReady && player && typeof player.setVolume === 'function') player.setVolume(vol);
-    localAudio.volume = vol / 100;
+function playPrev() {
+    if (currentPlaylist.length === 0) return;
+    let prevIndex = currentIndex - 1;
+    if (prevIndex < 0) prevIndex = currentPlaylist.length - 1;
+    loadAndPlaySong(prevIndex);
+}
+
+function togglePlayPause() {
+    if (audioPlayer.src === "") return; 
+    if (audioPlayer.paused) {
+        audioPlayer.play();
+        playIcon.classList.remove('fa-play');
+        playIcon.classList.add('fa-pause');
+    } else {
+        audioPlayer.pause();
+        playIcon.classList.remove('fa-pause');
+        playIcon.classList.add('fa-play');
+    }
+}
+
+audioPlayer.addEventListener('timeupdate', () => {
+    if (audioPlayer.duration) {
+        const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+    }
 });
 
-// 7. Progress Bar & Auto-Next Event
-setInterval(() => {
-    let perc = 0;
-    const track = currentPlaylist[currentIndex];
+audioPlayer.addEventListener('ended', () => playNext());
 
-    if (track && !track.isLocal && player && typeof player.getPlayerState === 'function') {
-        if (player.getPlayerState() === 1) {
-            perc = (player.getCurrentTime() / player.getDuration()) * 100;
-        }
-    } else if (track && track.isLocal) {
-        if (!localAudio.paused) {
-            perc = (localAudio.currentTime / localAudio.duration) * 100;
-            if (localAudio.ended) nextSong(); 
-        }
+function seekSong(event) {
+    if (audioPlayer.src === "") return;
+    const clickX = event.offsetX;
+    audioPlayer.currentTime = (clickX / document.getElementById('progressContainer').clientWidth) * audioPlayer.duration;
+}
+
+function changeVolume() { audioPlayer.volume = volumeSlider.value; }
+
+
+function toggleFavorite() {
+    if (!currentTrack) return;
+
+    const isFav = favoriteSongs.some(song => song.id === currentTrack.id);
+
+    if (isFav) {
+        favoriteSongs = favoriteSongs.filter(song => song.id !== currentTrack.id);
+        favIcon.classList.remove('fas'); // Solid heart
+        favIcon.classList.add('far'); // Outline heart
+        favIcon.style.color = "#b3b3b3";
+    } else {
+        favoriteSongs.push(currentTrack);
+        favIcon.classList.remove('far');
+        favIcon.classList.add('fas');
+        favIcon.style.color = "#1db954"; 
     }
 
-    if (perc > 0) document.getElementById('progressBar').style.width = perc + '%';
-}, 1000);
+    localStorage.setItem('myFavorites', JSON.stringify(favoriteSongs));
+}
 
-// 8. Search Input Event
-document.getElementById('searchInput').onkeypress = (e) => {
-    if (e.key === 'Enter') searchSongs(e.target.value);
-};
+function checkIfFavorite() {
+    if (!currentTrack) return;
+    const isFav = favoriteSongs.some(song => song.id === currentTrack.id);
+    if (isFav) {
+        favIcon.classList.remove('far');
+        favIcon.classList.add('fas');
+        favIcon.style.color = "#1db954";
+    } else {
+        favIcon.classList.remove('fas');
+        favIcon.classList.add('far');
+        favIcon.style.color = "#b3b3b3";
+    }
+}
+
+function showFavorites() {
+    document.getElementById('navHome').classList.remove('active');
+    document.getElementById('navFav').classList.add('active');
+    
+    listTitle.innerText = "My Favorite Songs ❤️";
+    currentPlaylist = favoriteSongs; 
+
+    if (currentPlaylist.length > 0) {
+        displaySongs();
+    } else {
+        songList.innerHTML = '<p class="status-msg">No favorites yet. Like some songs to see them here!</p>';
+    }
+}
+
+localFileInput.addEventListener('change', function(event) {
+    const files = event.target.files;
+    if (files.length === 0) return;
+
+    let localPlaylist = [];
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        
+        const objectUrl = URL.createObjectURL(file);
+        
+        localPlaylist.push({
+            id: `local_${i}_${Date.now()}`,
+            name: file.name.replace('.mp3', ''), 
+            artist: "Local Device",
+            image: "https://placehold.co/150/1db954/white?text=Local+Music", 
+            url: objectUrl
+        });
+    }
+
+    currentPlaylist = localPlaylist;
+    listTitle.innerText = `Local Music (${currentPlaylist.length} Songs)`;
+    
+    document.getElementById('navHome').classList.remove('active');
+    document.getElementById('navFav').classList.remove('active');
+    
+    displaySongs();
+});;
+
