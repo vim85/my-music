@@ -208,6 +208,117 @@ body {
 
 
 
+/* --- New Features Styles --- */
+
+.scroll-container {
+    margin-bottom: 25px;
+}
+
+.scroll-container h3 {
+    margin-bottom: 15px;
+    font-size: 16px;
+    color: var(--text);
+}
+
+.chips-scroll, .artist-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scrollbar-width: none; /* Firefox */
+}
+
+.chips-scroll::-webkit-scrollbar, .artist-scroll::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.chip {
+    background: #242424;
+    color: white;
+    border: 1px solid #333;
+    padding: 10px 20px;
+    border-radius: 30px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.chip:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.artist-box {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #1ed760);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s;
+}
+
+.artist-box:hover {
+    transform: scale(1.05);
+}
+
+/* Toast Notifications */
+.toast {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: var(--primary);
+    color: #000;
+    text-align: center;
+    border-radius: 30px;
+    padding: 14px 20px;
+    position: fixed;
+    z-index: 1000;
+    left: 50%;
+    bottom: 90px;
+    font-weight: bold;
+    font-size: 14px;
+    transform: translateX(-50%);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.toast.show {
+    visibility: visible;
+    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+@-webkit-keyframes fadein {
+    from {bottom: 0; opacity: 0;} 
+    to {bottom: 90px; opacity: 1;}
+}
+
+@keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 90px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+    from {bottom: 90px; opacity: 1;} 
+    to {bottom: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+    from {bottom: 90px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
+}
+
+
+
 
 @media (max-width: 768px) {
     .app-container {
