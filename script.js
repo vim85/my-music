@@ -224,7 +224,6 @@ mainContent.addEventListener('scroll', function() {
     }
 });
 
-/* --- Player & Popup Logic --- */
 function loadAndPlaySong(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
     currentIndex = index; 
@@ -232,16 +231,20 @@ function loadAndPlaySong(index) {
 
     if (!currentTrack.url) { showToast("Audio URL not available ❌"); return; }
 
+    // Update Main Player
     currTrackName.innerText = currentTrack.name;
     currArtistName.innerText = currentTrack.artist;
     currTrackImg.src = currentTrack.image;
     
+    // Update Mobile Pop-up Player
     document.getElementById('mpTrackName').innerText = currentTrack.name;
     document.getElementById('mpArtistName').innerText = currentTrack.artist;
     document.getElementById('mpTrackImg').src = currentTrack.image;
 
     audioPlayer.src = currentTrack.url;
-    audioPlayer.play();
+    audioPlayer.play().then(() => {
+        setupMediaSession(); // Initialize lock screen controls when song starts playing
+    }).catch(e => console.error("Playback failed:", e));
     
     playIcon.className = 'fas fa-pause';
     document.getElementById('mpPlayIcon').className = 'fas fa-pause';
@@ -250,6 +253,52 @@ function loadAndPlaySong(index) {
     checkIfFavorite(); 
 }
 
+// Separate function for Lock Screen Controls (Media Session)
+function setupMediaSession() {
+    if ('mediaSession' in navigator && currentTrack) {
+        // Set metadata (Song Name, Artist, Cover Art) for Lock Screen
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: currentTrack.name,
+            artist: currentTrack.artist,
+            album: 'MyMusic Player',
+            artwork: [
+                { src: currentTrack.image, sizes: '96x96',   type: 'image/jpeg' },
+                { src: currentTrack.image, sizes: '128x128', type: 'image/jpeg' },
+                { src: currentTrack.image, sizes: '192x192', type: 'image/jpeg' },
+                { src: currentTrack.image, sizes: '256x256', type: 'image/jpeg' },
+                { src: currentTrack.image, sizes: '384x384', type: 'image/jpeg' },
+                { src: currentTrack.image, sizes: '512x512', type: 'image/jpeg' }
+            ]
+        });
+
+        // Set action handlers (Play, Pause, Next, Prev) for Lock Screen buttons
+        navigator.mediaSession.setActionHandler('play', () => {
+            audioPlayer.play();
+            togglePlayPauseUI(true); // Helper to update UI
+        });
+        
+        navigator.mediaSession.setActionHandler('pause', () => {
+            audioPlayer.pause();
+            togglePlayPauseUI(false); // Helper to update UI
+        });
+        
+        navigator.mediaSession.setActionHandler('previoustrack', () => playPrev());
+        navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
+    }
+}
+
+// Helper function to keep UI in sync when using Lock Screen controls
+function togglePlayPauseUI(isPlaying) {
+    if (isPlaying) {
+        playIcon.className = 'fas fa-pause';
+        document.getElementById('mpPlayIcon').className = 'fas fa-pause';
+        document.getElementById('mpTrackImg').classList.add('playing');
+    } else {
+        playIcon.className = 'fas fa-play';
+        document.getElementById('mpPlayIcon').className = 'fas fa-play';
+        document.getElementById('mpTrackImg').classList.remove('playing');
+    }
+}
 function playNext() {
     if (currentPlaylist.length === 0) return;
     let nextIndex = currentIndex + 1;
@@ -377,6 +426,31 @@ function showFavorites() {
             card.onclick = () => loadAndPlaySong(index); songList.appendChild(card);
         });
     } else { songList.innerHTML = '<p class="status-msg">No favorites yet!</p>'; }
+}
+
+
+// Share Song Logic
+function shareSong() {
+    if (!currentTrack || !currentTrack.url) { 
+        showToast("Play a song to share!"); 
+        return; 
+    }
+    
+    // Check if the Web Share API is supported (Works on mobile browsers)
+    if (navigator.share) {
+        navigator.share({
+            title: currentTrack.name,
+            text: `Listen to ${currentTrack.name} by ${currentTrack.artist} on MyMusic!`,
+            url: window.location.href // Or a specific link to the song if your website supports it
+        }).then(() => {
+            console.log('Thanks for sharing!');
+        }).catch(console.error);
+    } else {
+        // Fallback for desktop: Copy link to clipboard
+        navigator.clipboard.writeText(`${currentTrack.name} - ${currentTrack.artist}\nLink: ${window.location.href}`)
+            .then(() => showToast("Song info copied to clipboard! 📋"))
+            .catch(() => showToast("Failed to copy link."));
+    }
 }
 
 document.getElementById('localFile').addEventListener('change', function(event) {
