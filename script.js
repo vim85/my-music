@@ -32,7 +32,7 @@ let isFetchingSuggestions = false;
 let suggestionsPlaylist = [];
 
 const CHIPS = ["Top Hindi", "Punjabi Hits", "Romantic", "Sad Songs", "Bhakti", "Party", "Lofi Chill"];
-const ARTISTS = ["Arijit Singh", "Jubin Nautiyal", "Diljit Dosanjh", "Shreya Ghoshal", "Atif Aslam", "Badshah", "Neha Kakkar"];
+const ARTISTS = ["Arijit Singh", "Diljit Dosanjh", "Karan Aujla", "Jubin Nautiyal", "Guru Randhawa", "Parmish Verma","Shreya Ghoshal", "B Praak", "Badshah",  "Hardy Sandhu",  "Neha Kakkar", "Ammy Virk", "Sidhu Moose Wala", "AP Dhillon", "Shubh"];
 
 window.onload = () => {
     buildChips();
