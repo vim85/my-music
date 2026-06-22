@@ -11,16 +11,16 @@
     <div class="app-container">
         <aside class="sidebar">
             <h2 class="logo"><i class="fas fa-compact-disc"></i> MyMusic</h2>
-            <nav>
-                <div class="nav-item active" id="navHome" onclick="fetchTrendingSongs()"><i class="fas fa-home"></i> Home</div>
-                <div class="nav-item" id="navFav" onclick="showFavorites()"><i class="fas fa-heart"></i> Favorites</div>
-            </nav>
             <div class="upload-section">
-                <label for="localFile" class="btn-secondary" style="color: white; font-size: 14px; margin-top:20px; cursor: pointer;">
+                <label for="localFile" class="btn-secondary">
                     <i class="fas fa-folder-open"></i> Local Music
                     <input type="file" id="localFile" accept="audio/*" multiple hidden>
                 </label>
             </div>
+            <nav>
+                <div class="nav-item active" id="navHome" onclick="fetchTrendingSongs()"><i class="fas fa-home"></i> Home</div>
+                <div class="nav-item" id="navFav" onclick="showFavorites()"><i class="fas fa-heart"></i> Favorites</div>
+            </nav>
         </aside>
 
         <main class="content" id="mainContent">
@@ -36,7 +36,6 @@
                     <h3>🎭 Moods & Genres</h3>
                     <div class="chips-scroll" id="chipsContainer"></div>
                 </div>
-
                 <div class="scroll-container">
                     <h3>🎤 Top Artists</h3>
                     <div class="artist-scroll" id="artistsContainer"></div>
@@ -44,31 +43,16 @@
             </div>
 
             <div id="homeCategories">
-                <div class="category-section">
-                    <h2>🔥 Trending Now</h2>
-                    <div id="trendingList" class="song-grid-horizontal">
-                        <p class="status-msg">Loading...</p>
-                    </div>
-                </div>
+                <div class="category-section"><h2>🔥 Trending Now</h2><div id="trendingList" class="song-grid-horizontal"></div></div>
+                <div class="category-section"><h2>💃 Punjabi Hits</h2><div id="punjabiList" class="song-grid-horizontal"></div></div>
+                <div class="category-section"><h2>❤️ Romantic Picks</h2><div id="romanticList" class="song-grid-horizontal"></div></div>
+                <div class="category-section"><h2>😢 Sad Songs</h2><div id="sadList" class="song-grid-horizontal"></div></div>
                 
-                <div class="category-section">
-                    <h2>💃 Punjabi Hits</h2>
-                    <div id="punjabiList" class="song-grid-horizontal">
-                        <p class="status-msg">Loading...</p>
-                    </div>
-                </div>
-
-                <div class="category-section">
-                    <h2>❤️ Romantic Picks</h2>
-                    <div id="romanticList" class="song-grid-horizontal">
-                        <p class="status-msg">Loading...</p>
-                    </div>
-                </div>
-                
-                <div class="category-section">
-                    <h2>😢 Sad Songs</h2>
-                    <div id="sadList" class="song-grid-horizontal">
-                        <p class="status-msg">Loading...</p>
+                <div class="category-section" style="margin-top: 40px; border-top: 1px solid #282828; padding-top: 20px;">
+                    <h2>🔮 Suggestions for You</h2>
+                    <div id="suggestionsGrid" class="song-grid"></div>
+                    <div id="loadingSuggestions" style="text-align: center; padding: 20px; display: none; color: #b3b3b3;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem;"></i> Loading more mixes...
                     </div>
                 </div>
             </div>
@@ -89,31 +73,24 @@
             </div>
             
             <div class="player-inner">
-                <div class="current-track">
+                <div class="current-track" onclick="openMobilePlayer()">
                     <img id="currTrackImg" src="https://placehold.co/60" alt="">
                     <div class="track-details">
                         <div id="currTrackName">No Song</div>
                         <small id="currArtistName">Search to play</small>
                     </div>
-                    <button id="favBtn" onclick="toggleFavorite()" style="background: none; border: none; color: #b3b3b3; cursor: pointer; margin-left: 10px; font-size: 1.2rem;">
-                        <i class="far fa-heart" id="favIcon"></i>
-                    </button>
                 </div>
                 
                 <div class="controls">
+                    <button id="favBtn" onclick="toggleFavorite()"><i class="far fa-heart" id="favIcon"></i></button>
                     <button id="prevBtn" onclick="playPrev()"><i class="fas fa-step-backward"></i></button>
                     <button id="playBtn" class="play-main" onclick="togglePlayPause()"><i class="fas fa-play" id="playIcon"></i></button>
                     <button id="nextBtn" onclick="playNext()"><i class="fas fa-step-forward"></i></button>
                 </div>
                 
                 <div class="extra-controls" style="display:flex; align-items:center; gap:15px; color:#b3b3b3;">
-                    <button onclick="downloadSong()" style="background:none; border:none; color:#b3b3b3; cursor:pointer; font-size:1.1rem;" title="Download Song">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button onclick="setSleepTimer()" style="background:none; border:none; color:#b3b3b3; cursor:pointer; font-size:1.1rem;" title="Sleep Timer">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                    
+                    <button onclick="downloadSong()"><i class="fas fa-download"></i></button>
+                    <button onclick="setSleepTimer()"><i class="fas fa-moon"></i></button>
                     <i class="fas fa-volume-up"></i>
                     <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1" onchange="changeVolume()">
                 </div>
@@ -121,6 +98,31 @@
         </footer>
     </div>
     
+    <div id="mobilePlayerPopup" class="mobile-player-popup">
+        <div class="mp-header">
+            <button onclick="closeMobilePlayer()"><i class="fas fa-chevron-down"></i></button>
+            <span>Now Playing</span>
+            <button onclick="toggleFavorite()"><i class="far fa-heart" id="mpFavIcon"></i></button>
+        </div>
+        <div class="mp-art">
+            <img id="mpTrackImg" src="https://placehold.co/300" alt="Album Art">
+        </div>
+        <div class="mp-details">
+            <h3 id="mpTrackName">No Song</h3>
+            <p id="mpArtistName">Search to play</p>
+        </div>
+        <div class="mp-progress">
+            <div class="progress-area" id="mpProgressContainer" onclick="seekSong(event)">
+                <div class="progress-bar" id="mpProgressBar"></div>
+            </div>
+        </div>
+        <div class="mp-controls">
+            <button onclick="playPrev()"><i class="fas fa-step-backward"></i></button>
+            <button class="mp-play-main" onclick="togglePlayPause()"><i class="fas fa-play" id="mpPlayIcon"></i></button>
+            <button onclick="playNext()"><i class="fas fa-step-forward"></i></button>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script src="script.js"></script>
