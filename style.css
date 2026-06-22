@@ -22,6 +22,7 @@ body {
     background-color: var(--bg);
     color: var(--text);
     overflow: hidden; /* Main window doesn't scroll, content area does */
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* =========================================
@@ -43,6 +44,7 @@ body {
     flex-direction: column;
     gap: 24px;
     flex-shrink: 0;
+    border-right: 1px solid #282828;
 }
 
 .logo {
@@ -55,7 +57,11 @@ body {
 
 .logo i { color: var(--primary); }
 
-nav { display: flex; flex-direction: column; gap: 15px; }
+.sidebar nav { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+}
 
 .nav-item {
     font-size: 1rem;
@@ -97,8 +103,7 @@ nav { display: flex; flex-direction: column; gap: 15px; }
     flex: 1;
     overflow-y: auto;
     padding: 24px;
-    /* padding-bottom is critical so content doesn't hide behind the player */
-    padding-bottom: 120px; 
+    padding-bottom: 120px; /* Critical so content doesn't hide behind player */
     scroll-behavior: smooth;
 }
 
@@ -145,7 +150,6 @@ nav { display: flex; flex-direction: column; gap: 15px; }
 .scroll-container { margin-bottom: 35px; }
 .scroll-container h3 { font-size: 1.2rem; margin-bottom: 15px; color: var(--text); }
 
-/* Horizontal Scroll setup for Chips and Artists */
 .chips-scroll, .artist-scroll {
     display: flex;
     gap: 15px;
@@ -154,7 +158,7 @@ nav { display: flex; flex-direction: column; gap: 15px; }
     scrollbar-width: none; /* Firefox */
 }
 
-.chips-scroll::-webkit-scrollbar, .artist-scroll::-webkit-scrollbar { display: none; }
+.chips-scroll::-webkit-scrollbar, .artist-scroll::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
 
 .chip {
     background: #242424;
@@ -179,7 +183,7 @@ nav { display: flex; flex-direction: column; gap: 15px; }
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #000; /* Dark text for contrast on green */
+    color: #000;
     font-weight: 700;
     text-align: center;
     padding: 10px;
@@ -196,11 +200,11 @@ nav { display: flex; flex-direction: column; gap: 15px; }
    6. HORIZONTAL CATEGORIES (Home Page)
 ========================================= */
 .category-section { margin-bottom: 35px; }
-.category-section h2 { font-size: 1.5rem; margin-bottom: 15px; font-weight: 700; }
+.category-section h2 { font-size: 1.4rem; margin-bottom: 15px; font-weight: 700; padding-left: 5px; }
 
 .song-grid-horizontal {
     display: flex;
-    gap: 20px;
+    gap: 18px;
     overflow-x: auto;
     padding-bottom: 20px;
     scroll-snap-type: x mandatory;
@@ -210,44 +214,50 @@ nav { display: flex; flex-direction: column; gap: 15px; }
 .song-grid-horizontal::-webkit-scrollbar { display: none; }
 
 .song-grid-horizontal .song-card {
-    min-width: 170px;
-    max-width: 170px;
+    min-width: 160px;
+    max-width: 160px;
     flex-shrink: 0;
     scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
 }
 
 /* =========================================
-   7. VERTICAL GRID (Search Results / Favs)
+   7. VERTICAL GRID (Search, Suggestions, Favs)
 ========================================= */
 .song-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
 }
 
-/* Common Card Styles (Used in both Horizontal & Vertical grids) */
+/* Common Card Styles */
 .song-card {
     background: var(--card);
-    padding: 16px;
+    padding: 14px;
     border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.2s;
 }
 
-.song-card:hover { background: var(--card-hover); }
+.song-card:hover { 
+    background: var(--card-hover); 
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
 
 .song-card img {
     width: 100%;
-    aspect-ratio: 1; /* Keeps image perfectly square */
+    aspect-ratio: 1; /* Perfect Square */
     object-fit: cover;
     border-radius: 6px;
-    margin-bottom: 16px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .song-card h4 {
-    margin: 0 0 8px 0;
-    font-size: 1rem;
+    margin: 0 0 6px 0;
+    font-size: 15px;
     font-weight: 700;
     color: var(--text);
     white-space: nowrap;
@@ -258,17 +268,16 @@ nav { display: flex; flex-direction: column; gap: 15px; }
 .song-card p {
     margin: 0;
     color: var(--text-muted);
-    font-size: 0.875rem;
+    font-size: 13px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* Status Messages */
 .status-msg { color: var(--text-muted); font-size: 14px; padding: 10px 0; }
 
 /* =========================================
-   8. MUSIC PLAYER (Fixed Bottom)
+   8. MAIN MUSIC PLAYER (Desktop & Mini)
 ========================================= */
 .player {
     position: fixed;
@@ -282,10 +291,10 @@ nav { display: flex; flex-direction: column; gap: 15px; }
 
 .progress-area {
     width: 100%;
-    height: 5px;
+    height: 4px;
     background: #4f4f4f;
     cursor: pointer;
-    position: relative; /* So it sits right at the top edge of the player */
+    position: relative;
     top: -1px;
 }
 
@@ -302,11 +311,10 @@ nav { display: flex; flex-direction: column; gap: 15px; }
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 24px;
-    height: 90px;
+    padding: 10px 24px;
+    height: 80px;
 }
 
-/* Player: Left Side (Track Info) */
 .current-track {
     display: flex;
     align-items: center;
@@ -316,8 +324,8 @@ nav { display: flex; flex-direction: column; gap: 15px; }
 }
 
 .current-track img {
-    width: 56px;
-    height: 56px;
+    width: 50px;
+    height: 50px;
     border-radius: 4px;
     object-fit: cover;
 }
@@ -326,11 +334,11 @@ nav { display: flex; flex-direction: column; gap: 15px; }
     display: flex;
     flex-direction: column;
     justify-content: center;
-    overflow: hidden; /* Prevents long names from pushing layout */
+    overflow: hidden;
 }
 
 .track-details div {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text);
     white-space: nowrap;
@@ -339,27 +347,14 @@ nav { display: flex; flex-direction: column; gap: 15px; }
 }
 
 .track-details small {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-top: 3px;
+    margin-top: 2px;
 }
 
-#favBtn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 1.1rem;
-    transition: color 0.2s;
-    flex-shrink: 0; /* Prevents button from shrinking */
-}
-
-#favBtn:hover { color: var(--text); }
-
-/* Player: Center (Controls) */
 .controls {
     display: flex;
     align-items: center;
@@ -368,7 +363,7 @@ nav { display: flex; flex-direction: column; gap: 15px; }
     width: 40%;
 }
 
-.controls button {
+.controls button, .extra-controls button {
     background: none;
     border: none;
     color: var(--text-muted);
@@ -377,13 +372,13 @@ nav { display: flex; flex-direction: column; gap: 15px; }
     transition: color 0.2s;
 }
 
-.controls button:hover { color: var(--text); }
+.controls button:hover, .extra-controls button:hover { color: var(--text); }
 
 .play-main {
     background: var(--text) !important;
     color: var(--bg) !important;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     display: flex;
     justify-content: center;
@@ -394,7 +389,6 @@ nav { display: flex; flex-direction: column; gap: 15px; }
 
 .play-main:hover { transform: scale(1.05); color: var(--bg) !important; }
 
-/* Player: Right Side (Extra Controls) */
 .extra-controls {
     display: flex;
     align-items: center;
@@ -403,19 +397,6 @@ nav { display: flex; flex-direction: column; gap: 15px; }
     width: 30%;
     color: var(--text-muted);
 }
-
-.extra-controls button {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 1rem;
-    transition: color 0.2s;
-}
-
-.extra-controls button:hover { color: var(--text); }
-
-.extra-controls i.fa-volume-up { font-size: 1rem; }
 
 .extra-controls input[type=range] {
     width: 100px;
@@ -435,9 +416,9 @@ nav { display: flex; flex-direction: column; gap: 15px; }
     border-radius: 30px;
     padding: 12px 24px;
     position: fixed;
-    z-index: 1000;
+    z-index: 3000;
     left: 50%;
-    bottom: 110px; /* Above the player */
+    bottom: 100px;
     font-weight: 600;
     font-size: 14px;
     transform: translateX(-50%);
@@ -446,75 +427,120 @@ nav { display: flex; flex-direction: column; gap: 15px; }
     transition: opacity 0.3s, bottom 0.3s;
 }
 
-.toast.show { visibility: visible; opacity: 1; bottom: 120px; }
-
+.toast.show { visibility: visible; opacity: 1; bottom: 110px; }
 
 /* =========================================
-   10. MOBILE RESPONSIVENESS
+   10. MOBILE PLAYER POP-UP (Anime Spin)
+========================================= */
+.mobile-player-popup {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #121212;
+    z-index: 2000;
+    display: flex; flex-direction: column;
+    padding: 30px 20px;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-player-popup.open { transform: translateY(0); }
+
+.mp-header { 
+    display: flex; justify-content: space-between; align-items: center; 
+    font-size: 1.1rem; font-weight: 600; margin-bottom: 40px; color: var(--text-muted);
+}
+
+.mp-header button { background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer; }
+
+.mp-art { flex: 1; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+.mp-art img { 
+    width: 280px; height: 280px; 
+    border-radius: 50%; /* Rotating CD Shape */
+    object-fit: cover; 
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 0 10px #242424; 
+    animation: spin 10s linear infinite paused; 
+}
+
+.mp-art img.playing { animation-play-state: running; }
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.mp-details { text-align: center; margin-bottom: 30px; }
+.mp-details h3 { font-size: 1.6rem; margin-bottom: 5px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-details p { color: var(--text-muted); font-size: 1rem; }
+
+.mp-progress { margin-bottom: 30px; }
+
+.mp-controls { display: flex; justify-content: center; align-items: center; gap: 40px; margin-bottom: 20px;}
+.mp-controls button { background: none; border: none; color: white; font-size: 2rem; cursor: pointer; }
+
+.mp-play-main { 
+    width: 75px; height: 75px; 
+    background: var(--primary) !important; 
+    border-radius: 50%; 
+    display: flex; justify-content: center; align-items: center; 
+    color: black !important; 
+    box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4);
+}
+
+/* =========================================
+   11. MOBILE RESPONSIVENESS
 ========================================= */
 @media screen and (max-width: 768px) {
-    /* Layout shifts to vertical */
     .app-container { flex-direction: column; }
     
-    /* Mobile Sidebar becomes Top Nav */
+    /* Custom Mobile Header Layout */
     .sidebar {
-        width: 100%;
-        padding: 16px;
-        flex-direction: row;
+        display: grid;
+        grid-template-columns: 1fr auto; /* Logo left, Local Music right */
+        grid-template-rows: auto auto;   /* Row 1: Logo/Local, Row 2: Nav */
+        gap: 15px 20px;
+        padding: 15px 20px;
         align-items: center;
-        justify-content: space-between;
+        background: var(--sidebar);
         border-bottom: 1px solid #282828;
+        width: 100%;
     }
     
-    .logo { font-size: 1.2rem; }
+    .logo { grid-column: 1 / 2; grid-row: 1 / 2; margin: 0; font-size: 1.3rem; }
     
-    nav { 
-        flex-direction: row; 
-        gap: 20px; 
-        display: none; /* Hide standard nav text on mobile, or implement hamburger */
+    .upload-section { grid-column: 2 / 3; grid-row: 1 / 2; margin: 0; }
+    .btn-secondary { padding: 6px 12px; font-size: 12px; margin: 0; }
+    
+    .sidebar nav { 
+        grid-column: 1 / 3; grid-row: 2 / 3; 
+        display: flex; flex-direction: row; gap: 30px; 
     }
     
-    /* We can show just icons for Home/Fav on mobile if we adjust HTML, 
-       but for now, hide the text nav and rely on search/chips */
-    .sidebar nav { display: flex; }
-    .nav-item { font-size: 0; gap: 0; } /* Hide text, show icon */
-    .nav-item i { font-size: 1.2rem; }
-    
-    .upload-section { margin-top: 0; }
-    .btn-secondary { padding: 8px 12px; font-size: 12px; }
+    .nav-item { font-size: 14px; gap: 8px; }
 
-    /* Content Area */
-    .content {
-        padding: 16px;
-        padding-bottom: 130px; /* More space for stacked mobile player */
-    }
-    
-    .search-box { max-width: 100%; }
+    /* Main Content adjustments */
+    .content { padding: 15px; padding-bottom: 90px; }
+    .search-box { max-width: 100%; margin-bottom: 20px; }
 
-    /* Grids scale down slightly */
-    .song-grid-horizontal .song-card { min-width: 140px; max-width: 140px; padding: 12px; }
+    /* Adjust grids for smaller screens */
+    .song-grid-horizontal .song-card { min-width: 130px; max-width: 130px; padding: 10px; }
+    .song-grid-horizontal .song-card h4 { font-size: 13px; }
     .song-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
-    
-    /* Mobile Player Layout */
-    .player-inner {
-        padding: 8px 16px;
-        height: auto; /* Let it grow vertically if needed */
-        flex-wrap: wrap; /* Allow wrapping */
-        gap: 10px;
+
+    /* Mobile Mini Player Layout */
+    .player-inner { 
+        padding: 8px 15px; 
+        height: 60px; 
+        cursor: pointer; /* Clicking this inner area opens the pop-up */
     }
     
-    /* Make Track Info take full width on top row of player */
-    .current-track { width: 100%; min-width: 100%; justify-content: space-between; }
-    .current-track img { width: 48px; height: 48px; }
-    .track-details { flex: 1; margin-right: 10px; }
+    .current-track { width: auto; flex: 1; gap: 10px; }
+    .current-track img { width: 40px; height: 40px; }
+    .track-details div { max-width: 150px; font-size: 0.9rem; }
+    .track-details small { font-size: 0.75rem; }
     
-    /* Center the controls on bottom row */
-    .controls { width: 100%; justify-content: center; gap: 30px; padding-bottom: 5px; }
+    .controls { width: auto; justify-content: flex-end; gap: 15px; }
+    .play-main { width: 34px; height: 34px; font-size: 0.9rem !important; }
     
-    /* Hide extra controls (volume, sleep, download) to save space, 
-       or keep them minimal. Hiding for clean UI. */
+    /* Hide Extra Controls & Fav button on mini player to save space */
     .extra-controls { display: none !important; }
+    #favBtn { display: none; }
     
-    /* Adjust toast position for taller mobile player */
-    .toast.show { bottom: 140px; }
+    .toast.show { bottom: 80px; }
 }
