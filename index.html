@@ -11,16 +11,16 @@
     <div class="app-container">
         <aside class="sidebar">
             <h2 class="logo"><i class="fas fa-compact-disc"></i> MyMusic</h2>
+            <nav class="sidebar-nav">
+                <div class="nav-item active" id="navHome" onclick="fetchTrendingSongs()"><i class="fas fa-home"></i> Home</div>
+                <div class="nav-item" id="navFav" onclick="showFavorites()"><i class="fas fa-heart"></i> Favorites</div>
+            </nav>
             <div class="upload-section">
                 <label for="localFile" class="btn-secondary">
                     <i class="fas fa-folder-open"></i> Local Music
                     <input type="file" id="localFile" accept="audio/*" multiple hidden>
                 </label>
             </div>
-            <nav>
-                <div class="nav-item active" id="navHome" onclick="fetchTrendingSongs()"><i class="fas fa-home"></i> Home</div>
-                <div class="nav-item" id="navFav" onclick="showFavorites()"><i class="fas fa-heart"></i> Favorites</div>
-            </nav>
         </aside>
 
         <main class="content" id="mainContent">
@@ -35,7 +35,12 @@
                 <div class="scroll-container">
                     <h3>🎭 Moods & Genres</h3>
                     <div class="chips-scroll" id="chipsContainer"></div>
+                    <div class="category-section" style="margin-top: 15px;">
+                        <h4 id="moodCategoryTitle" style="color: #b3b3b3; margin-bottom: 10px; font-weight: normal;">Top Hindi Picks</h4>
+                        <div id="moodCategoryList" class="song-grid-horizontal"></div>
+                    </div>
                 </div>
+
                 <div class="scroll-container">
                     <h3>🎤 Top Artists</h3>
                     <div class="artist-scroll" id="artistsContainer"></div>
@@ -111,15 +116,29 @@
             <h3 id="mpTrackName">No Song</h3>
             <p id="mpArtistName">Search to play</p>
         </div>
+        
         <div class="mp-progress">
+            <div class="mp-time">
+                <span id="mpCurrentTime">0:00</span>
+                <span id="mpDuration">0:00</span>
+            </div>
             <div class="progress-area" id="mpProgressContainer" onclick="seekSong(event)">
                 <div class="progress-bar" id="mpProgressBar"></div>
             </div>
         </div>
+        
         <div class="mp-controls">
             <button onclick="playPrev()"><i class="fas fa-step-backward"></i></button>
             <button class="mp-play-main" onclick="togglePlayPause()"><i class="fas fa-play" id="mpPlayIcon"></i></button>
             <button onclick="playNext()"><i class="fas fa-step-forward"></i></button>
+        </div>
+
+        <div class="mp-extra-controls">
+            <button onclick="downloadSong()" style="color: white;"><i class="fas fa-download"></i></button>
+            <div class="mp-volume">
+                <i class="fas fa-volume-up"></i>
+                <input type="range" id="mpVolumeSlider" min="0" max="1" step="0.1" value="1" onchange="changeMpVolume()">
+            </div>
         </div>
     </div>
 
