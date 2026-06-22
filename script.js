@@ -10,6 +10,7 @@ const currArtistName = document.getElementById('currArtistName');
 const currTrackImg = document.getElementById('currTrackImg');
 const progressBar = document.getElementById('progressBar');
 const volumeSlider = document.getElementById('volumeSlider');
+const mpVolumeSlider = document.getElementById('mpVolumeSlider');
 const favIcon = document.getElementById('favIcon');
 const exploreSection = document.getElementById('exploreSection');
 const homeCategories = document.getElementById('homeCategories');
@@ -22,11 +23,10 @@ let currentTrack = null;
 let favoriteSongs = JSON.parse(localStorage.getItem('myFavorites')) || [];
 let sleepTimer = null;
 
-// Search & Suggestions Infinite Scroll Variables
+// Infinite Scroll Variables
 let currentSearchQuery = "";
 let currentPage = 1;
 let isFetching = false;
-
 let suggestionsPage = 1;
 let isFetchingSuggestions = false;
 let suggestionsPlaylist = [];
@@ -39,18 +39,27 @@ window.onload = () => {
     buildArtists();
     fetchTrendingSongs(); 
     audioPlayer.volume = volumeSlider.value;
+    loadMoodCategory(CHIPS[0]); // Load first chip's songs automatically
 };
 
 /* --- UI Builders --- */
 function buildChips() {
     const container = document.getElementById('chipsContainer');
-    CHIPS.forEach(chip => {
+    container.innerHTML = "";
+    CHIPS.forEach((chip, index) => {
         const btn = document.createElement('button');
-        btn.className = 'chip'; btn.innerText = chip;
-        btn.onclick = () => { searchInput.value = chip; searchSongs(chip); };
+        btn.className = index === 0 ? 'chip active-chip' : 'chip'; 
+        btn.innerText = chip;
+        btn.onclick = () => { 
+            // Highlight active chip
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active-chip'));
+            btn.classList.add('active-chip');
+            loadMoodCategory(chip); 
+        };
         container.appendChild(btn);
     });
 }
+
 function buildArtists() {
     const container = document.getElementById('artistsContainer');
     ARTISTS.forEach(artist => {
@@ -60,13 +69,22 @@ function buildArtists() {
         container.appendChild(div);
     });
 }
+
 function showToast(msg) {
     const toast = document.getElementById('toast');
     toast.innerText = msg; toast.className = "toast show";
     setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
 }
 
-/* --- API Data Fetch --- */
+/* --- Helper: Format Time (0:00) --- */
+function formatTime(seconds) {
+    if (isNaN(seconds)) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
+/* --- API Fetch --- */
 async function fetchSongsData(query, page = 1, limit = 15) {
     try {
         const url = `${API_BASE_URL}${encodeURIComponent(query)}&page=${page}&limit=${limit}`;
@@ -86,6 +104,15 @@ async function fetchSongsData(query, page = 1, limit = 15) {
     return [];
 }
 
+/* --- Load Dynamic Mood Category --- */
+async function loadMoodCategory(query) {
+    document.getElementById('moodCategoryTitle').innerText = `${query} Picks`;
+    const container = document.getElementById('moodCategoryList');
+    container.innerHTML = '<p class="status-msg">Loading...</p>';
+    const songs = await fetchSongsData(query, 1, 15);
+    renderHorizontalList(songs, 'moodCategoryList');
+}
+
 async function loadHomeCategories() {
     exploreSection.style.display = 'block';
     homeCategories.style.display = 'block';
@@ -96,14 +123,16 @@ async function loadHomeCategories() {
     renderHorizontalList(await fetchSongsData("Bollywood romantic", 1, 15), 'romanticList');
     renderHorizontalList(await fetchSongsData("Sad songs Hindi", 1, 15), 'sadList');
     
-    // Load initial suggestions
     if(suggestionsPlaylist.length === 0) loadSuggestions();
 }
 
 function renderHorizontalList(songsData, containerId) {
     const container = document.getElementById(containerId);
     container.innerHTML = "";
-    if (songsData.length === 0) return;
+    if (songsData.length === 0) {
+        container.innerHTML = '<p class="status-msg">No songs found</p>';
+        return;
+    }
     songsData.forEach((song, index) => {
         const card = document.createElement('div');
         card.className = 'song-card';
@@ -120,13 +149,12 @@ function fetchTrendingSongs() {
     loadHomeCategories();
 }
 
-/* --- Infinite Scroll for Suggestions (Mixed Cache) --- */
+/* --- Suggestions & Search Logic --- */
 async function loadSuggestions() {
     if (isFetchingSuggestions) return;
     isFetchingSuggestions = true;
     document.getElementById('loadingSuggestions').style.display = 'block';
 
-    // Randomize query to mix up suggestions
     const queries = ["Hits", "Lofi Bollywood", "Best of 90s India", "Viral Songs"];
     const randomQuery = queries[Math.floor(Math.random() * queries.length)];
 
@@ -141,7 +169,6 @@ async function loadSuggestions() {
             const card = document.createElement('div');
             card.className = 'song-card';
             card.innerHTML = `<img src="${song.image}"><h4 style="margin: 10px 0 5px 0; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${song.name}</h4><p style="margin: 0; color: #b3b3b3; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${song.artist}</p>`;
-            // IMPORTANT: link global playlist to suggestions list
             card.onclick = () => { currentPlaylist = suggestionsPlaylist; loadAndPlaySong(startIndex + i); };
             container.appendChild(card);
         });
@@ -151,7 +178,6 @@ async function loadSuggestions() {
     isFetchingSuggestions = false;
 }
 
-/* --- Search Logic & Scroll Events --- */
 function handleSearch(event) {
     if (event.key === 'Enter' && searchInput.value.trim()) searchSongs(searchInput.value.trim());
 }
@@ -193,12 +219,12 @@ mainContent.addEventListener('scroll', function() {
         if (searchResultsSection.style.display === 'block' && !isFetching && currentSearchQuery !== "") {
             searchSongs(currentSearchQuery, false);
         } else if (homeCategories.style.display === 'block' && !isFetchingSuggestions) {
-            loadSuggestions(); // Load more suggestions if at bottom of home page
+            loadSuggestions(); 
         }
     }
 });
 
-/* --- Player & Mobile Pop-up Logic --- */
+/* --- Player & Popup Logic --- */
 function loadAndPlaySong(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
     currentIndex = index; 
@@ -206,12 +232,10 @@ function loadAndPlaySong(index) {
 
     if (!currentTrack.url) { showToast("Audio URL not available ❌"); return; }
 
-    // Update Main Player
     currTrackName.innerText = currentTrack.name;
     currArtistName.innerText = currentTrack.artist;
     currTrackImg.src = currentTrack.image;
     
-    // Update Mobile Pop-up Player
     document.getElementById('mpTrackName').innerText = currentTrack.name;
     document.getElementById('mpArtistName').innerText = currentTrack.artist;
     document.getElementById('mpTrackImg').src = currentTrack.image;
@@ -221,7 +245,7 @@ function loadAndPlaySong(index) {
     
     playIcon.className = 'fas fa-pause';
     document.getElementById('mpPlayIcon').className = 'fas fa-pause';
-    document.getElementById('mpTrackImg').classList.add('playing'); // Start spinning anime
+    document.getElementById('mpTrackImg').classList.add('playing'); 
 
     checkIfFavorite(); 
 }
@@ -255,11 +279,20 @@ function togglePlayPause() {
     }
 }
 
+// Duration and Progress Sync
+audioPlayer.addEventListener('loadedmetadata', () => {
+    document.getElementById('mpDuration').innerText = formatTime(audioPlayer.duration);
+});
+
 audioPlayer.addEventListener('timeupdate', () => {
     if (audioPlayer.duration) {
         const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
         progressBar.style.width = `${progressPercent}%`;
         document.getElementById('mpProgressBar').style.width = `${progressPercent}%`;
+        
+        // Update Time displays
+        document.getElementById('mpCurrentTime').innerText = formatTime(audioPlayer.currentTime);
+        document.getElementById('mpDuration').innerText = formatTime(audioPlayer.duration);
     }
 });
 
@@ -267,23 +300,28 @@ audioPlayer.addEventListener('ended', () => playNext());
 
 function seekSong(event) {
     if (audioPlayer.src === "") return;
-    // Handles seeking for both main player and mobile popup depending on where click happened
     const containerWidth = event.currentTarget.clientWidth;
     const clickX = event.offsetX;
     audioPlayer.currentTime = (clickX / containerWidth) * audioPlayer.duration;
 }
 
-function changeVolume() { audioPlayer.volume = volumeSlider.value; }
+// Sync Main and Mobile Volumes
+function changeVolume() { 
+    audioPlayer.volume = volumeSlider.value; 
+    mpVolumeSlider.value = volumeSlider.value; // Sync to mobile slider
+}
 
-/* Mobile Player Pop-up Functions */
+function changeMpVolume() {
+    audioPlayer.volume = mpVolumeSlider.value;
+    volumeSlider.value = mpVolumeSlider.value; // Sync to main slider
+}
+
 function openMobilePlayer() {
     if (window.innerWidth <= 768 && currentTrack) {
         document.getElementById('mobilePlayerPopup').classList.add('open');
     }
 }
-function closeMobilePlayer() {
-    document.getElementById('mobilePlayerPopup').classList.remove('open');
-}
+function closeMobilePlayer() { document.getElementById('mobilePlayerPopup').classList.remove('open'); }
 
 /* --- Extra Features --- */
 function downloadSong() {
@@ -324,11 +362,8 @@ function checkIfFavorite() {
     const iconClass = isFav ? 'fas fa-heart' : 'far fa-heart';
     const iconColor = isFav ? '#1db954' : '#b3b3b3';
     
-    // Main Player
     favIcon.className = iconClass; favIcon.style.color = iconColor;
-    // Mobile Pop-up Player
-    document.getElementById('mpFavIcon').className = iconClass;
-    document.getElementById('mpFavIcon').style.color = iconColor;
+    document.getElementById('mpFavIcon').className = iconClass; document.getElementById('mpFavIcon').style.color = iconColor;
 }
 
 function showFavorites() {
