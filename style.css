@@ -128,24 +128,86 @@ body {
 
 .artist-box:hover { transform: scale(1.05); }
 
-/* Horizontal Categories */
-.category-section { margin-bottom: 30px; }
-.category-section h2 { font-size: 1.2rem; margin-bottom: 15px; color: #ffffff; }
+/* --- Horizontal Categories (Fixed UI) --- */
+.category-section { 
+    margin-bottom: 35px; 
+}
+
+.category-section h2 { 
+    font-size: 1.4rem; 
+    margin-bottom: 15px; 
+    color: #ffffff; 
+    font-weight: bold;
+    padding-left: 5px;
+}
 
 .song-grid-horizontal {
     display: flex;
-    gap: 15px;
+    gap: 18px;
     overflow-x: auto;
-    padding-bottom: 10px;
-    scrollbar-width: none;
+    padding-bottom: 20px;
+    /* scroll-snap से मोबाइल में स्क्रोलिंग एकदम स्मूथ और परफेक्ट जगह पर रुकेगी */
+    scroll-snap-type: x mandatory; 
+    scrollbar-width: none; /* Firefox के लिए स्क्रोलबार हाईड करें */
 }
-.song-grid-horizontal::-webkit-scrollbar { display: none; }
 
+.song-grid-horizontal::-webkit-scrollbar { 
+    display: none; /* Chrome/Safari के लिए स्क्रोलबार हाईड करें */
+}
+
+/* Horizontal कार्ड्स का साइज फिक्स करें ताकि वो दबें नहीं */
 .song-grid-horizontal .song-card {
     min-width: 160px;
-    flex-shrink: 0;
+    max-width: 160px;
+    flex-shrink: 0; /* इसे सिकुड़ने से रोकेगा */
+    scroll-snap-align: start; /* स्क्रोल करते वक्त कार्ड एकदम शुरुआत में स्नैप होगा */
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    background: var(--card);
 }
 
+/* इमेज को परफेक्ट स्क्वायर (Square) रखें */
+.song-grid-horizontal .song-card img {
+    width: 100%;
+    height: 136px; /* फिक्स्ड हाइट */
+    object-fit: cover; /* इमेज स्ट्रेच नहीं होगी, कटकर फिट हो जाएगी */
+    border-radius: 6px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* टेक्स्ट को बाहर जाने (overflow) से रोकें */
+.song-grid-horizontal .song-card h4 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+.song-grid-horizontal .song-card p {
+    margin: 0;
+    color: #b3b3b3;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+/* मोबाइल स्क्रीन के लिए कार्ड का साइज थोड़ा छोटा करें */
+@media (max-width: 768px) {
+    .song-grid-horizontal .song-card {
+        min-width: 130px;
+        max-width: 130px;
+        padding: 10px;
+    }
+    .song-grid-horizontal .song-card img {
+        height: 110px;
+    }
+}
 /* Vertical Grid (Search Results) */
 .song-grid {
     display: grid;
